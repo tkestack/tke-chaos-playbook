@@ -112,11 +112,32 @@ TODO
 ## TKE Master自维护集群kube-scheduler停服
 TODO
 
-## 托管集群kube-apiserver组件停服
-TODO
+## 托管集群master组件停服
 
-## 托管集群kube-controller-manager停服
-TODO
+**playbook**
+1. kube-apiserver停服：`workflow/managed-cluster-apiserver-shutdown-scenario.yaml`
+2. kube-controller-manager停服：`workflow/managed-cluster-controller-manager-shutdown-scenario.yaml`
+3. kube-scheduler停服：`workflow/managed-cluster-scheduler-shutdown-scenario.yaml`
 
-## 托管集群kube-scheduler停服
-TODO
+该场景通过腾讯云API对托管集群的`master`组件进行停服演练，主要流程包括：
+
+1. **前置检查**：验证目标集群中存在`tke-chaos-precheck-resource ConfigMap`，确保集群状态正常
+2. **组件停机**：调用腾讯云API停止`master`组件
+3. **状态验证**：延迟20秒后检查`master`状态
+4. **组件恢复**：调用腾讯云API恢复`master`组件
+5. **最终验证**：再次检查组件状态确保恢复成功
+
+**参数说明**
+
+| 参数名称 | 类型 | 默认值 | 说明 |
+|---------|------|--------|------|
+| `region` | `string` | - | 腾讯云地域，如`ap-guangzhou` [地域查询](https://www.tencentcloud.com/zh/document/product/213/6091) |
+| `secretId` | `string` | - | 腾讯云API密钥ID, 密钥可前往官网控制台 [API密钥管理](https://console.cloud.tencent.com/cam/capi) 进行获取 |
+| `secretKey` | `string` | - | 腾讯云API密钥 |
+| `cluster-id` | `string` | - | 演练集群ID |
+| `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | 目标集群kubeconfig secret名称 |
+
+**注意事项**
+
+2. 演练过程中会影响集群`master`组件服务可用性
+3. 建议在非生产环境或维护窗口期执行

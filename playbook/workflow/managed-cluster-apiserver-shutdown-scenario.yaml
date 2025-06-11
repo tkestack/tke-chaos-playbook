@@ -1,0 +1,146 @@
+---
+# 功能说明：TKE托管集群master组件停机演练测试
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  labels:
+    apiserver-shutdown-scenario: "true"
+  name: apiserver-shutdown-scenario
+  namespace: tke-chaos-test
+spec:
+  entrypoint: main
+  serviceAccountName: tke-chaos
+  arguments:
+    parameters:
+    - name: region  # 腾讯云地域, 如ap-qingyuan
+      value: "<REGION>"
+    - name: secretId   # 腾讯云API密钥ID
+      value: "<SECRET_ID>"
+    - name: secretKey  # 腾讯云API密钥
+      value: "<SECRET_KEY>"
+    - name: cluster-id  # 演练集群ID
+      value: "<CLUSTER_ID>"
+    - name: kubeconfig-secret-name  # 目标集群接入kubeconfig的secret名称
+      value: "dest-cluster-kubeconfig"
+    - name: precheck-configmap-name  # 前置检查检测的configmap名称
+      value: "tke-chaos-precheck-resource"
+    - name: precheck-configmap-namespace  # 前置检查检测的configmap命名空间
+      value: "tke-chaos-test"
+  templates:
+  - name: main
+    steps:
+    - - name: precheck
+        arguments:
+          parameters:
+          - name: kubeconfig-secret-name
+            value: "{{workflow.parameters.kubeconfig-secret-name}}"
+          - name: precheck-configmap-name
+            value: "{{workflow.parameters.precheck-configmap-name}}"
+          - name: precheck-configmap-namespace
+            value: "{{workflow.parameters.precheck-configmap-namespace}}"
+          - name: source
+            value: |
+              kubectl get -n {{workflow.parameters.precheck-configmap-namespace}} configmap {{workflow.parameters.precheck-configmap-name}}
+        templateRef:
+          name: kubectl-cmd
+          template: kubectl-script
+          clusterScope: true
+    - - name: suspend-1
+        template: suspend
+    - - name: shutdown-apiserver
+        arguments:
+          parameters:
+          - name: action
+            value: "ModifyMasterComponent"
+          - name: region
+            value: "{{workflow.parameters.region}}"
+          - name: payload
+            value: |
+              {"ClusterId":"{{workflow.parameters.cluster-id}}","Component":"kube-apiserver","Operation":"shutdown"}
+          - name: secretId
+            value: "{{workflow.parameters.secretId}}"
+          - name: secretKey
+            value: "{{workflow.parameters.secretKey}}"
+        templateRef:
+          name: tke-yunapi-template
+          template: caller
+          clusterScope: true
+    - - name: delay-1
+        template: delay
+        arguments:
+          parameters:
+          - name: duration
+            value: "20s"
+    - - name: get-apiserver-status-1
+        arguments:
+          parameters:
+          - name: action
+            value: "DescribeMasterComponent"
+          - name: region
+            value: "{{workflow.parameters.region}}"
+          - name: payload
+            value: |
+              {"ClusterId":"{{workflow.parameters.cluster-id}}","Component":"kube-apiserver"}
+          - name: secretId
+            value: "{{workflow.parameters.secretId}}"
+          - name: secretKey
+            value: "{{workflow.parameters.secretKey}}"
+        templateRef:
+          name: tke-yunapi-template
+          template: caller
+          clusterScope: true
+    - - name: suspend-2
+        template: suspend
+    - - name: restore-apiserver
+        arguments:
+          parameters:
+          - name: action
+            value: "ModifyMasterComponent"
+          - name: region
+            value: "{{workflow.parameters.region}}"
+          - name: payload
+            value: |
+              {"ClusterId":"{{workflow.parameters.cluster-id}}","Component":"kube-apiserver","Operation":"restore"}
+          - name: secretId
+            value: "{{workflow.parameters.secretId}}"
+          - name: secretKey
+            value: "{{workflow.parameters.secretKey}}"
+        templateRef:
+          name: tke-yunapi-template
+          template: caller
+          clusterScope: true
+    - - name: delay-2
+        template: delay
+        arguments:
+          parameters:
+          - name: duration
+            value: "20s"
+    - - name: get-apiserver-status-2
+        arguments:
+          parameters:
+          - name: action
+            value: "DescribeMasterComponent"
+          - name: region
+            value: "{{workflow.parameters.region}}"
+          - name: payload
+            value: |
+              {"ClusterId":"{{workflow.parameters.cluster-id}}","Component":"kube-apiserver"}
+          - name: secretId
+            value: "{{workflow.parameters.secretId}}"
+          - name: secretKey
+            value: "{{workflow.parameters.secretKey}}"
+        templateRef:
+          name: tke-yunapi-template
+          template: caller
+          clusterScope: true
+
+  - name: suspend
+    suspend: {}
+
+  - name: delay
+    inputs:
+      parameters:
+      - name: duration
+    suspend:
+      duration: "{{inputs.parameters.duration}}"

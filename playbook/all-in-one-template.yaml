@@ -493,6 +493,49 @@ spec:
         value: "application/json"
 
 ---
+# 功能说明: 用于调用腾讯云TKE API, 腾讯云API文档: https://cloud.tencent.com/document/api
+# 参数说明:
+#  tke-yunapi-template
+#    1. action: 接口名称
+#    2. region: 地域, 如: ap-guangzhou等
+#    3. payload: 请求体
+#    4. secretId: secretId, 腾讯云密钥管理: https://console.cloud.tencent.com/cam/capi
+#    5. secretKey: secretKey
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: tke-yunapi-template
+spec:
+  entrypoint: caller
+  templates:
+  - name: caller
+    inputs:
+      parameters:
+      - name: image
+        default: "ccr.ccs.tencentyun.com/tkeimages/tke-chaos:v0.0.2"
+      - name: action
+      - name: region
+      - name: payload
+      - name: secretId
+      - name: secretKey
+    container:
+      image: "{{inputs.parameters.image}}"
+      command:
+      - /kubestress
+      - tkeyunapi
+      - --action={{inputs.parameters.action}}
+      - --region={{inputs.parameters.region}}
+      - --payload={{inputs.parameters.payload}}
+      - --secret-id={{inputs.parameters.secretId}}
+      - --secret-key={{inputs.parameters.secretKey}}
+    outputs:
+      parameters:
+      - name: response
+        valueFrom:
+          default: "null"
+          path: /tmp/response.txt
+
+---
 # 功能说明：
 #   1. 演练前检查集群健康状态, 如果集群不健康, 则不执行演练;
 #      校验规则: Nodes健康率>=nodes-health-ratio && Pods的健康率>=pods-health-ratio 则允许执行演练

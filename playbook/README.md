@@ -112,11 +112,31 @@ TODO
 ## TKE Self-maintenance of Master cluster's kube-scheduler Disruption
 TODO
 
-## Managed Cluster's kube-apiserver Disruption
-TODO
+## Managed Cluster Master Component Disruption
 
-## Managed Cluster's kube-controller-manager Disruption
-TODO
+**playbooks**:
+1. kube-apiserver disruption: `workflow/managed-cluster-apiserver-shutdown-scenario.yaml`
+2. kube-controller-manager disruption: `workflow/managed-cluster-controller-manager-shutdown-scenario.yaml` 
+3. kube-scheduler disruption: `workflow/managed-cluster-scheduler-shutdown-scenario.yaml`
 
-## Managed Cluster's kube-scheduler Disruption
-TODO
+This scenario tests the disruption of managed cluster master components via Tencent Cloud API with the following workflow:
+
+1. **Pre-check**: Verifies the existence of `tke-chaos-precheck-resource ConfigMap` in target cluster to ensure cluster health
+2. **Component Shutdown**: Calls Tencent Cloud API to stop the master component
+3. **Status Verification**: Waits 20 seconds then checks the component status
+4. **Component Recovery**: Calls Tencent Cloud API to restore the master component
+5. **Final Verification**: Rechecks component status to confirm successful recovery
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `region` | `string` | - | Tencent Cloud region, e.g. `ap-guangzhou` [Region List](https://www.tencentcloud.com/document/product/213/6091?lang=en&pg=) |
+| `secretId` | `string` | - | Tencent Cloud API secret ID, obtain from [API Key Management](https://console.cloud.tencent.com/cam/capi) |
+| `secretKey` | `string` | - | Tencent Cloud API secret key |
+| `cluster-id` | `string` | - | Target cluster ID |
+| `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | Secret name containing target cluster kubeconfig |
+
+**Notes**
+1. Will affect master component availability during test
+2. Recommended to execute in non-production environments or maintenance windows
