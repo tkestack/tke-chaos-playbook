@@ -100,19 +100,10 @@ This scenario tests Tencent Cloud TKE's namespace deletion block policy with the
 
 Tencent Cloud TKE supports various resource protection policies, such as CRD deletion protection, PV deletion protection, etc. You can refer to the official Tencent Cloud documentation for more details: [Policy Management](https://cloud.tencent.com/document/product/457/103179)
 
-## TKE Self-maintenance of Master cluster's kube-apiserver Disruption
-TODO
-
-## TKE Self-maintenance of Master cluster's etcd Disruption
-TODO
-
-## TKE Self-maintenance of Master cluster's kube-controller-manager Disruption
-TODO
-
-## TKE Self-maintenance of Master cluster's kube-scheduler Disruption
-TODO
-
 ## Managed Cluster Master Component Disruption
+
+1. Your cluster name must contain the words `Chaos Experiment` or `混沌演练` and the cluster size must be smaller than `L1000`, otherwise the Tencent Cloud API call will fail
+2. You need to modify the `region`, `secret-id`, `secret-key`, and `cluster-id` parameters in the YAML file ([Parameter Explanation](#managed-cluster-master-component-parameters))
 
 **playbooks**:
 1. kube-apiserver disruption: `workflow/managed-cluster-apiserver-shutdown-scenario.yaml`
@@ -144,16 +135,20 @@ kubectl create -f workflow/managed-cluster-master-component/shutdown-apiserver.y
 kubectl create -f workflow/managed-cluster-master-component/restore-apiserver.yaml
 ```
 
+<a id="managed-cluster-master-component-parameters"></a>
 **Parameters**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `region` | `string` | <REGION> | Tencent Cloud region, e.g. `ap-guangzhou` [Region List](https://www.tencentcloud.com/document/product/213/6091?lang=en&pg=) |
-| `secret-id` | `string` | <SECRET_ID> | Tencent Cloud API secret ID, obtain from [API Key Management](https://console.cloud.tencent.com/cam/capi) |
-| `secret-key` | `string` | <SECRET_KEY> | Tencent Cloud API secret key |
-| `cluster-id` | `string` | <CLUSTER_ID> | Target cluster ID |
+| `region` | `string` | `<REGION>` | Tencent Cloud region, e.g. `ap-guangzhou` [Region List](https://www.tencentcloud.com/document/product/213/6091?lang=en&pg=) |
+| `secret-id` | `string` | `<SECRET_ID>` | Tencent Cloud API secret ID, obtain from [API Key Management](https://console.cloud.tencent.com/cam/capi) |
+| `secret-key` | `string` | `<SECRET_KEY>` | Tencent Cloud API secret key |
+| `cluster-id` | `string` | `<CLUSTER_ID>` | Target cluster ID |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | Secret name containing target cluster kubeconfig |
 
 **Notes**
 1. Will affect master component availability during test
 2. Recommended to execute in non-production environments or maintenance windows
+
+## Self-Maintenance Cluster Master Component Disruption
+TODO

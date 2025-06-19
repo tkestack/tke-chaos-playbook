@@ -7,14 +7,14 @@
 Kubernetes' centralized architecture and declarative management model, while enabling efficient operations, also introduce critical risks of cascading failures. The open ecosystem (with third-party components like Flink and Rancher) and complex multi-service environments further exacerbate these risks:
 
 - Cascading deletion disaster: A customer using Rancher to manage Kubernetes clusters accidentally deleted a namespace, which subsequently deleted all core business workloads and Pods in the production cluster, causing service interruption.
-- Control plane overload: In a large OpenAI cluster, deploying a DaemonSet monitoring component triggered control plane failures and coredns overload. The coredns scaling depended on control plane recovery, affecting the data plane and causing global OpenAI service outages.
-- Data plane's strong dependency on control plane: In open-source Flink on Kubernetes scenarios, kube-apiserver outages may cause Flink task checkpoint failures and leader election anomalies. In severe cases, it may trigger abnormal exits of all existing task Pods, leading to complete data plane collapse and major incidents.
+- Control plane overload: In a large OpenAI cluster, deploying a DaemonSet monitoring component triggered control plane failures and coredns overload. The coredns scaling depended on control plane recovery, affecting the data plane and causing global OpenAI service disruption.
+- Data plane's strong dependency on control plane: In open-source Flink on Kubernetes scenarios, kube-apiserver disruption may cause Flink task checkpoint failures and leader election anomalies. In severe cases, it may trigger abnormal exits of all existing task Pods, leading to complete data plane collapse and major incidents.
 
 These cases are not uncommon. The root cause lies in Kubernetes' architecture vulnerability chain - a single component failure or incorrect command can trigger global failures through centralized pathways. 
 
 To proactively understand the impact duration and severity of control plane failures on services, we should conduct regular fault simulation and assessments to improve failure response capabilities, ensuring Kubernetes environment stability and reliability. 
 
-This project provides Kubernetes chaos testing capabilities covering scenarios like node shutdown, accidental resource deletion, and control plane component (etcd, kube-apiserver, coredns, etc.) overload/outage, it will help you minimize blast radius of cluster failures.
+This project provides Kubernetes chaos testing capabilities covering scenarios like node shutdown, accidental resource deletion, and control plane component (etcd, kube-apiserver, coredns, etc.) overload/disruption, it will help you minimize blast radius of cluster failures.
 
 ## Prerequisites
 
@@ -47,6 +47,9 @@ kubectl get po -n tke-chaos-test
 ```
 
 5. Enable public access for `tke-chaos-test/tke-chaos-argo-workflows-server Service` in Tencent Cloud TKE Console. Access Argo Server UI at `LoadBalancer IP:2746` using credentials obtained via:
+
+Note: If the cluster restricts public access, please configure the Service for internal access and connect via internal network.
+
 ```bash
 # Get Argo Server UI access token
 kubectl exec -it -n tke-chaos-test deployment/tke-chaos-argo-workflows-server -- argo auth token
@@ -62,7 +65,8 @@ Using `kube-apiserver overload` as an example:
 
 - Create kube-apiserver overload workflow:
 ```bash
-kubectl create -f playbook/rbac.yaml && kubectl create -f playbook/all-in-one-template.yaml && kubectl create -f playbook/workflow/apiserver-overload-scenario.yaml
+kubectl create -f playbook/rbac.yaml && kubectl create -f playbook/all-in-one-template.yaml
+kubectl create -f playbook/workflow/apiserver-overload-scenario.yaml
 ```
 
 ![apiserver overload flowchart](./playbook/docs/chaos-flowchart-en.png)
@@ -74,11 +78,9 @@ kubectl create -f playbook/rbac.yaml && kubectl create -f playbook/all-in-one-te
 - **Execute Testing**: During kube-apiserver overload testing, the system floods `dest cluster`'s kube-apiserver with List Pod requests to simulate high load. Monitor kube-apiserver metrics via Tencent Cloud TKE Console and observe your business Pod health during testing.
 - **Result Processing**: View testing results in Argo Server UI (recommended) or via `kubectl describe workflow {workflow-name}`.
 
-### Stopping Tests
+### Deleting Tests
 ```bash
-# Stop tests
-kubectl get workflow
-kubectl delete workflow {workflow-name}
+kubectl delete -f playbook/workflow/apiserver-overload-scenario.yaml
 ```
 
 ## Roadmap
@@ -89,20 +91,19 @@ kubectl delete workflow {workflow-name}
 | etcd overload                              |   -      | Completed   |      -          | Simulate etcd high load                                         |
 | apiserver overload (APF)                   |   -      | Completed   |      -          | Add Expensive List APF Policy,Simulate kube-apiserver high load |
 | etcd overload (ReadCache/Consistent cache) |   -      | Completed   |      -          | Add Etcd Overload Protect Policy, Simulate etcd high load       |
-| coredns outage                             |   -      | Completed   |      -          | Simulate coredns service outage                                 |
-| kubernetes-proxy outage                    |   -      | Completed   |      -          | Simulate kubernetes-proxy outage                                |
+| coredns disruption                         |   -      | Completed   |      -          | Simulate coredns service disruption                                 |
+| kubernetes-proxy disruption                |   -      | Completed   |      -          | Simulate kubernetes-proxy disruption                                |
 | accidental deletion scenario               |   -      | Completed   |      -          | Simulate accidental resource deletion                           |
-| kube-apiserver outage                      |  P0      | In Progress |  2025-06-15     | Simulate kube-apiserver outage                                  |
-| etcd outage                                | P0       | In Progress |  2025-06-15     | Simulate etcd cluster failure                                   |
-| kube-scheduler outage                      | P0       | In Progress |  2025-06-15     | Test scheduling behavior during scheduler failure               |
-| kube-controller-manager outage             | P0       | In Progress |  2025-06-15     | Validate controller component failure scenarios                 |
-| cloud-controller-manager outage            | P0       | In Progress |  2025-06-15     | Validate controller component failure scenarios                 |
-| master node shutdown                       | P1       | In Progress |  2025-06-15     | Simulate master node poweroff                                   |
+| TKE managed cluster kube-apiserver disruption     |   -      | Completed   |      -          | Simulate kube-apiserver disruption                                  |
+| TKE managed cluster kube-scheduler disruption      | -       | Completed   |      -          | Test scheduling behavior during scheduler failure               |
+| TKE managed cluster kube-controller-manager disruption     | -       | Completed   |      -          | Validate controller component failure scenarios                 |
+| TKE Self-Maintenance Cluster master node shutdown  | P1       | In Progress |  2025-06-30     | Simulate master node poweroff                                   |
+| etcd disruption                                | P1       | In Progress |  2025-06-30     | Simulate etcd cluster failure                                   |
 
 ## FAQ
 1. Why use two clusters for fault simulation?
 
-  Testings are orchestrated using Argo Workflow, which follows a CRD-based pattern heavily dependent on kube-apiserver. Using a single cluster for fault simulation (especially apiserver/etcd overload or outage tests) would make kube-apiserver unavailable, preventing Argo Workflow Controller from functioning and halting the entire workflow.
+  Testings are orchestrated using Argo Workflow, which follows a CRD-based pattern heavily dependent on kube-apiserver. Using a single cluster for fault simulation (especially apiserver/etcd overload or disruption tests) would make kube-apiserver unavailable, preventing Argo Workflow Controller from functioning and halting the entire workflow.
 
 2. How to track testing progress after starting?
 
