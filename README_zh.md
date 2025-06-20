@@ -46,7 +46,10 @@ kubectl create -f playbook/install-argo.yaml
 kubectl get po -n tke-chaos-test
 ```
 
-5. 腾讯云`TKE控制台`开启`tke-chaos-test/tke-chaos-argo-workflows-server Service`公网访问，浏览器访问`LoadBalancer IP:2746`，执行如下命令获取的`Argo Server UI`接入凭证登录`Argo UI`，`Argo UI`可查看演练流程的详细信息。
+5. 腾讯云`TKE控制台`开启`tke-chaos-test/tke-chaos-argo-workflows-server Service`公网访问，浏览器访问`LoadBalancer IP:2746`。执行如下命令获取的`Argo Server UI`接入凭证登录`Argo UI`，`Argo UI`可用于查看演练流程的详细信息。
+
+注：若集群限制公网访问，请配置Service内网访问并通过内网访问。
+
 ```bash
 # 获取Argo Server UI接入凭证
 kubectl exec -it -n tke-chaos-test deployment/tke-chaos-argo-workflows-server -- argo auth token
@@ -62,11 +65,11 @@ kubectl exec -it -n tke-chaos-test deployment/tke-chaos-argo-workflows-server --
 
 - 创建`kube-apiserver`高负载故障演练`workflow`：
 ```bash
-kubectl create -f playbook/rbac.yaml && kubectl create -f playbook/all-in-one-template.yaml && kubectl create -f playbook/workflow/apiserver-overload-scenario.yaml
+kubectl create -f playbook/rbac.yaml && kubectl create -f playbook/all-in-one-template.yaml
+kubectl create -f playbook/workflow/apiserver-overload-scenario.yaml
 ```
 
-![apiserver高负载演练流程图](./playbook/docs/chaos-flowchart-zh.png)
-
+![演练流程图](./playbook/docs/chaos-flowchart-zh.png)
 
 **核心流程说明**
 
@@ -75,11 +78,9 @@ kubectl create -f playbook/rbac.yaml && kubectl create -f playbook/all-in-one-te
 - **执行演练**：`kube-apiserver`高负载演练执行过程中，会对`目标集群`的`kube-apiserver`发起大量的洪泛`List Pod`请求，以模拟`kube-apiserver`高负载场景，您可以访问`腾讯云TKE控制台`的`目标集群`核心组件监控，查看`kube-apiserver`的负载情况。同时，您应该关注演练过程中您的业务Pod的健康状态，以验证`kube-apiserver`高负载是否会影响您的业务。
 - **演练结果**：您可以访问`Argo Server UI`查看演练结果（推荐），您也可以执行`kubectl describe workflow {workflow-name}`查看演练结果。
 
-### 停止测试
+### 删除演练
 ```bash
-# 停止测试
-kubectl get workflow
-kubectl delete worflow {workflow-name}
+kubectl delete -f playbook/workflow/apiserver-overload-scenario.yaml
 ```
 
 ## 功能规划路线图
@@ -93,12 +94,11 @@ kubectl delete worflow {workflow-name}
 | coredns停服                    |   -   |      完成     |      -       | 模拟coredns服务中断场景                                   |
 | kubernetes-proxy停服           |   -   |      完成     |      -       | 模拟kubernetes-proxy服务中断场景                          |
 | 资源误删除场景                      |  -   |    完成     |      -       | 模拟资源被误删除场景                                        |
-| kube-apiserver停服演练           |  P0   |    开发中     |  2025-06-15  | 模拟kube-apiserver服务中断场景                            |
-| etcd停服演练                     | P0    |    开发中     |  2025-06-15  | 模拟etcd集群故障场景                                      |
-| kube-scheduler停服演练           | P0    |    开发中     |  2025-06-15  | 测试调度器故障期间的集群调度行为                                  |
-| kube-controller-manager停服演练  | P0    |    开发中     |  2025-06-15  | 验证控制器组件故障场景                                       |
-| cloud-controller-manager停服演练 | P0    |    开发中     |  2025-06-15  | 验证控制器组件故障场景                                       |
-| master节点停机                   | P1    |    开发中     |  2025-06-15  | 模拟master关机场景                                      |
+| TKE托管集群kube-apiserver停服演练  |  -   |    完成     |        -       | 模拟kube-apiserver服务中断场景                            |
+| TKE托管集群kube-scheduler停服演练  | -    |    完成     |        -       | 测试调度器故障期间的集群调度行为                                  |
+| TKE托管集群kube-controller-manager停服演练  | -    |    完成     |        -       | 验证控制器组件故障场景                                       |
+| TKE自维护集群master节点停机        | P1    |    开发中     |  2025-06-30  | 模拟master关机场景                                      |
+| etcd停服演练                     | P1    |    开发中     |  2025-06-30  | 模拟etcd集群故障场景                                      |
 
 ## 常见问题
 1. 为什么要用两个集群来执行演练测试?

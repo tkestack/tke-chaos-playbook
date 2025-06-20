@@ -19,18 +19,10 @@ spec:
   arguments:
     parameters:
     # 全局参数
-    - name: enable-apiserver-overload  # apiserver-overload step 执行开关
-      value: "true"
     - name: chaos-image
       value: ccr.ccs.tencentyun.com/tkeimages/tke-chaos:v0.0.2
     - name: cluster-id  # 演练集群ID
       value: "未知"
-    - name: enable-apf  # 是否启用apf限速
-      value: "false"
-    - name: enable-etcd-overload-protect  # 是否启用etcd过载保护
-      value: "false"
-    - name: enable-resource-create  # 演练开始前是否创建资源, 模拟现网集群资源规模
-      value: "false"
     - name: webhook-url  # 企业微信群webhook地址
       value: ""
     - name: kubeconfig-secret-name  # 目标集群接入kubeconfig的secret名称
@@ -51,12 +43,14 @@ spec:
       value: "0.9"
 
     # 资源创建参数
+    - name: enable-resource-create  # 演练开始前是否创建资源, 模拟现网集群资源规模
+      value: "false"
     - name: resource-create-image  # 资源创建工具镜像
       value: "{{workflow.parameters.chaos-image}}"
     - name: resource-create-namespace  # 创建资源所在的命名空间
       value: "tke-chaos-test"
     - name: resource-create-object-type  # 创建资源类型支持, pods/configmaps
-      value: "pods"
+      value: "configmaps"
     - name: resource-create-object-size-bytes  # 创建资源大小, 单位字节
       value: "10000"
     - name: resource-create-object-count  # 创建资源数量
@@ -69,8 +63,12 @@ spec:
       value: "{{workflow.parameters.chaos-image}}"
 
     # 压测参数
+    - name: enable-apiserver-overload  # apiserver-overload step 执行开关
+      value: "true"
     - name: inject-stress-image  # 故障注入工具镜像
       value: "{{workflow.parameters.chaos-image}}"
+    - name: inject-stress-object-type  # 故障注入时, list的资源对象类型, 支持pods/configmaps
+      value: "{{workflow.parameters.resource-create-object-type}}"
     - name: from-cache  # 构造apiserver高负载时, 置为true, 构造etcd高负载时, 置为false
       value: "true"
     - name: inject-stress-user-agent  # 发压端UserAgent, 如: "kubestress/1.0.0"
@@ -83,6 +81,8 @@ spec:
       value: "30s"
 
     # apf限流参数
+    - name: enable-apf  # 是否启用apf限速
+      value: "false"
     - name: apf-user-agent  # 限速的客户端UserAgent, 如: "kubestress/1.0.0"
       value: "{{workflow.parameters.inject-stress-user-agent}}"
     - name: apf-manifest  # apf限速的yaml配置, 包括PriorityLevelConfiguration、FlowSchema资源
@@ -137,6 +137,8 @@ spec:
               kind: UserAgent
 
     # etcd过载保护参数
+    - name: enable-etcd-overload-protect  # 是否启用etcd过载保护
+      value: "false"
     - name: etcd-overload-protect-user-agent  # 过载保护的客户端UserAgent, 如: "kubestress/1.0.0"
       value: "{{workflow.parameters.inject-stress-user-agent}}"
     - name: etcd-overload-protect-manifest
@@ -222,6 +224,8 @@ spec:
           # 压测参数
           - name: inject-stress-image  # 故障注入工具镜像
             value: "{{workflow.parameters.inject-stress-image}}"
+          - name: inject-stress-list-object-type  # 故障注入时, list的资源对象类型, 支持pods/configmaps
+            value: "{{workflow.parameters.inject-stress-object-type}}"
           - name: from-cache  # 构造apiserver高负载时, 置为true, 构造etcd高负载时, 置为false
             value: "{{workflow.parameters.from-cache}}"
           - name: inject-stress-user-agent  # 发压端UserAgent, 如: "kubestress/1.0.0"

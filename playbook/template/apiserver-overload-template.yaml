@@ -250,7 +250,7 @@ spec:
           name: resource-archestrate
           template: resource-create
           clusterScope: true
-        when: "'{{inputs.parameters.enable-resource-create}}' == 'true'"
+        when: "{{steps.precheck.status}} == Succeeded && '{{inputs.parameters.enable-resource-create}}' == 'true'"
 
     - - name: notify-inject-stress  # 通知: 开始注入故障
         continueOn:
@@ -381,14 +381,14 @@ spec:
         arguments:
           parameters:
           - name: cmd
-            value: "delete -n {{inputs.parameters.resource-create-namespace}} {{inputs.parameters.resource-create-object-type}} --all"
+            value: "delete -n {{inputs.parameters.resource-create-namespace}} {{inputs.parameters.resource-create-object-type}} -l kubestress"
           - name: kubeconfig-secret-name
             value: "{{inputs.parameters.kubeconfig-secret-name}}"
         templateRef:
           name: kubectl-cmd
           template: kubectl-cmd
           clusterScope: true
-        when: "'{{inputs.parameters.enable-resource-create}}' == 'true'"
+        when: "{{steps.precheck.status}} == Succeeded && '{{inputs.parameters.enable-resource-create}}' == 'true'"
 
 
   - name: metrics-collect-then-notify-to-wechat

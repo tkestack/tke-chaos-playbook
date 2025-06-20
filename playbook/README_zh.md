@@ -100,19 +100,10 @@
 
 腾讯云TKE支持大量的资源防护策略，如`CRD`删除保护、`PV`删除保护等，您可以访问腾讯云官方文档以查看详细信息[策略管理](https://cloud.tencent.com/document/product/457/103179)
 
-## TKE Master自维护集群kube-apiserver停服
-TODO
-
-## TKE Master自维护集群etcd停服
-TODO
-
-## TKE Master自维护集群kube-controller-manager停服
-TODO
-
-## TKE Master自维护集群kube-scheduler停服
-TODO
-
 ## 托管集群master组件停服
+
+1. 您的集群名称中需要包含`Chaos Experiment`或`混沌演练`字样且集群规模小于`L1000`，否则腾讯云API将会调用失败
+2. 您需要修改演练`YAML`文件中`region`、`secret-id`、`secret-key`、`cluster-id`参数([参数说明](#托管集群master组件停服参数说明))
 
 **playbook**
 1. kube-apiserver停服&恢复：`workflow/managed-cluster-apiserver-shutdown-scenario.yaml`
@@ -143,20 +134,21 @@ kubectl create -f workflow/managed-cluster-master-component/shutdown-apiserver.y
 ```bash
 kubectl create -f workflow/managed-cluster-master-component/restore-apiserver.yaml
 ```
-
+<a id="托管集群master组件停服参数说明"></a>
 **参数说明**
-
-您需要修改演练`YAML`文件中`region`、`secret-id`、`secret-key`、`cluster-id`参数，参数说明如下：
 
 | 参数名称 | 类型 | 默认值 | 说明 |
 |---------|------|--------|------|
-| `region` | `string` | <REGION> | 腾讯云地域，如`ap-guangzhou` [地域查询](https://www.tencentcloud.com/zh/document/product/213/6091) |
-| `secret-id` | `string` | <SECRET_ID> | 腾讯云API密钥ID, 密钥可前往官网控制台 [API密钥管理](https://console.cloud.tencent.com/cam/capi) 进行获取 |
-| `secret-key` | `string` | <SECRET_KEY> | 腾讯云API密钥 |
-| `cluster-id` | `string` | <CLUSTER_ID> | 演练集群ID |
+| `region` | `string` | `<REGION>` | 腾讯云地域，如`ap-guangzhou` [地域查询](https://www.tencentcloud.com/zh/document/product/213/6091) |
+| `secret-id` | `string` | `<SECRET_ID>` | 腾讯云API密钥ID, 密钥可前往官网控制台 [API密钥管理](https://console.cloud.tencent.com/cam/capi) 进行获取 |
+| `secret-key` | `string` | `<SECRET_KEY>` | 腾讯云API密钥 |
+| `cluster-id` | `string` | `<CLUSTER_ID>` | 演练集群ID |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | 目标集群kubeconfig secret名称 |
 
 **注意事项**
 
 2. 演练过程中会影响集群`master`组件服务可用性
 3. 建议在非生产环境或维护窗口期执行
+
+## 自维护集群master组件停服
+TODO
