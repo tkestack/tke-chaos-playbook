@@ -20,13 +20,13 @@ spec:
   arguments:
     parameters:
     - name: region  # Tencent Cloud region (e.g. ap-qingyuan)
-      value: "<REGION>"
+      value: ""
     - name: cluster-id  # Cluster ID
-      value: "<CLUSTER_ID>"
+      value: ""
     - name: secret-id  # Tencent Cloud API secret ID
-      value: "<SECRET_ID>"
+      value: ""
     - name: secret-key  # Tencent Cloud API secret key
-      value: "<SECRET_KEY>"
+      value: ""
     - name: kubeconfig-secret-name  # Secret name containing target cluster's kubeconfig
       value: "dest-cluster-kubeconfig"
     - name: precheck-configmap-name  # ConfigMap name for pre-check validation
@@ -146,3 +146,38 @@ spec:
       - name: duration
     suspend:
       duration: "{{inputs.parameters.duration}}"
+
+  - name: validate-params
+    script:
+      image: bitnami/kubectl:1.32.4
+      command: [bash]
+      source: |
+        #!/bin/bash
+        set -e
+        if [[ -z "{{workflow.parameters.region}}" ]]; then
+          echo "[ERROR] region parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        if [[ -z "{{workflow.parameters.cluster-id}}" ]]; then
+          echo "[ERROR] cluster-id parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        if [[ -z "{{workflow.parameters.secret-id}}" ]]; then
+          echo "[ERROR] secret-id parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        if [[ -z "{{workflow.parameters.secret-key}}" ]]; then
+          echo "[ERROR] secret-key parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        if [[ -z "{{workflow.parameters.kubeconfig-secret-name}}" ]]; then
+          echo "[ERROR] kubeconfig-secret-name parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        echo "Parameter validation passed"
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: "null"
+          path: /tmp/validate_result

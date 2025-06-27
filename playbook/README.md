@@ -33,6 +33,19 @@ Supports enabling `etcd Overload Protection` and `APF Flow Control` [APF Rate Li
 | `inject-stress-list-qps` | `int` | "100" | QPS per stress test Pod |
 | `inject-stress-total-duration` | `string` | "30s" | Total test duration (e.g. 30s, 5m) |
 
+**Recommended Parameters for TKE Clusters**
+
+| Cluseter Level | resource-create-object-size-bytes | resource-create-object-count | resource-create-qps | inject-stress-concurrency | inject-stress-list-qps |
+|---------|----------------------------------|-----------------------------|---------------------|--------------------------|-----------------------|
+| L5      | 10000                           | 100                         | 10                   | 6                        | 200                   |
+| L50     | 10000                           | 300                         | 10                   | 6                        | 200                   |
+| L100    | 50000                           | 500                         | 20                   | 6                        | 200                   |
+| L200    | 100000                          | 1000                        | 50                   | 9                        | 200                   |
+| L500    | 100000                          | 1000                        | 50                   | 12                       | 200                   |
+| L1000   | 100000                          | 3000                        | 50                   | 12                       | 300                   |
+| L3000   | 100000                          | 6000                        | 500                  | 18                       | 500                   |
+| L5000   | 100000                          | 10000                       | 500                  | 21                       | 500                   |
+
 **etcd Overload Protection & Enhanced APF**
 
 Tencent Cloud TKE team has developed these core protection features:
@@ -56,15 +69,19 @@ Supported versions:
 **playbook**: `workflow/coredns-disruption-scenario.yaml`
 
 This scenario simulates coredns service disruption by:
-1. Scaling coredns Deployment replicas to 0
-2. Maintaining zero replicas for specified duration
-3. Restoring original replica count
+
+1. **Pre-check**: Verify the existence of the `tke-chaos-test/tke-chaos-precheck-resource ConfigMap` in the target cluster to ensure the cluster is available for testing
+
+2. **Component Shutdown**: Log in to the Argo Web UI, click on `coredns-disruption-scenario workflow`, then click the `RESUME` button under the `SUMMARY` tab of the `suspend-1` node to scale down the coredns Deployment replicas to 0
+
+3. **Service Validation**: During the coredns disruption, you can verify whether your services are affected by the coredns disruption
+
+4. **Component Recovery**: Click the `RESUME` button under the `SUMMARY` tab of the `suspend-2` node to restore the coredns Deployment replicas
 
 **Parameters**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `disruption-duration` | `string` | `30s` | Disruption duration (e.g. 30s, 5m) |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | Target cluster kubeconfig secret name |
 
 ## kubernetes-proxy Disruption
@@ -72,15 +89,19 @@ This scenario simulates coredns service disruption by:
 **playbook**: `workflow/kubernetes-proxy-disruption-scenario.yaml`
 
 This scenario simulates kubernetes-proxy service disruption by:
-1. Scaling kubernetes-proxy Deployment replicas to 0
-2. Maintaining zero replicas for specified duration
-3. Restoring original replica count
+
+1. **Pre-check**: Verify the existence of the `tke-chaos-test/tke-chaos-precheck-resource ConfigMap` in the target cluster to ensure the cluster is available for testing
+
+2. **Component Shutdown**: Log in to the Argo Web UI, click on `kubernetes-proxy-disruption-scenario workflow`, then click the `RESUME` button under the `SUMMARY` tab of the `suspend-1` node to scale down the kubernetes-proxy Deployment replicas to 0
+
+3. **Service Validation**: During the kubernetes-proxy disruption, you can verify whether your services are affected by the kubernetes-proxy disruption
+
+4. **Component Recovery**: Click the `RESUME` button under the `SUMMARY` tab of the `suspend-2` node to restore the kubernetes-proxy Deployment replicas
 
 **Parameters**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `disruption-duration` | `string` | `30s` | Disruption duration (e.g. 30s, 5m) |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | Target cluster kubeconfig secret name |
 
 ## Namespace Deletion Protection
@@ -140,10 +161,10 @@ kubectl create -f workflow/managed-cluster-master-component/restore-apiserver.ya
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `region` | `string` | `<REGION>` | Tencent Cloud region, e.g. `ap-guangzhou` [Region List](https://www.tencentcloud.com/document/product/213/6091?lang=en&pg=) |
-| `secret-id` | `string` | `<SECRET_ID>` | Tencent Cloud API secret ID, obtain from [API Key Management](https://console.cloud.tencent.com/cam/capi) |
-| `secret-key` | `string` | `<SECRET_KEY>` | Tencent Cloud API secret key |
-| `cluster-id` | `string` | `<CLUSTER_ID>` | Target cluster ID |
+| `region` | `string` | "" | Tencent Cloud region, e.g. `ap-guangzhou` [Region List](https://www.tencentcloud.com/document/product/213/6091?lang=en&pg=) |
+| `secret-id` | `string` | "" | Tencent Cloud API secret ID, obtain from [API Key Management](https://console.cloud.tencent.com/cam/capi) |
+| `secret-key` | `string` | "" | Tencent Cloud API secret key |
+| `cluster-id` | `string` | "" | Target cluster ID |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | Secret name containing target cluster kubeconfig |
 
 **Notes**
