@@ -33,6 +33,19 @@
 | `inject-stress-list-qps` | `int` | "100" | 每个发压`Pod`的`QPS` |
 | `inject-stress-total-duration` | `string` | "30s" | 发压执行总时长(如30s，5m等) |
 
+**TKE集群推荐压测参数**
+
+| 集群规格 | resource-create-object-size-bytes | resource-create-object-count | resource-create-qps | inject-stress-concurrency | inject-stress-list-qps |
+|---------|----------------------------------|-----------------------------|---------------------|--------------------------|-----------------------|
+| L5      | 10000                           | 100                         | 10                   | 6                        | 200                   |
+| L50     | 10000                           | 300                         | 10                   | 6                        | 200                   |
+| L100    | 50000                           | 500                         | 20                   | 6                        | 200                   |
+| L200    | 100000                          | 1000                        | 50                   | 9                        | 200                   |
+| L500    | 100000                          | 1000                        | 50                   | 12                       | 200                   |
+| L1000   | 100000                          | 3000                        | 50                   | 12                       | 300                   |
+| L3000   | 100000                          | 6000                        | 500                  | 18                       | 500                   |
+| L5000   | 100000                          | 10000                       | 500                  | 21                       | 500                   |
+
 **etcd过载保护&增强apf限流说明**
 
 腾讯云TKE团队在社区版本基础上开发了以下核心保护特性：
@@ -56,15 +69,16 @@
 **playbook**：`workflow/coredns-disruption-scenario.yaml`
 
 该场景通过以下方式构造`coredns`服务中断：
-1. 将`coredns Deployment`副本数缩容到`0`
-2. 维持指定时间副本数为`0`
-3. 恢复原有副本数
+
+1. **前置检查**：验证目标集群中存在`tke-chaos-test/tke-chaos-precheck-resource ConfigMap`，确保集群可用于演练
+2. **组件停机**：登录argo Web UI，点击`coredns-disruption-scenario workflow`，点击`suspend-1`节点`SUMMARY`标签下的`RESUME`按钮，将`coredns Deployment`副本数缩容到`0`
+3. **业务验证**：`coredns`停服期间，您可以去验证您的业务是否受到`cordns`停服的影响
+4. **组件恢复**：点击`suspend-2`节点`SUMMARY`标签下的`RESUME`按钮，将`coredns Deployment`副本数恢复
 
 **参数说明**
 
 | 参数名称 | 类型 | 默认值 | 说明 |
 |---------|------|--------|------|
-| `disruption-duration` | `string` | `30s` | 服务中断持续时间(如30s，5m等) |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | `目标集群kubeconfig secret`名称，如为空，则演练当前集群 |
 
 ## kubernetes-proxy停服
@@ -72,15 +86,16 @@
 **playbook**：`workflow/kubernetes-proxy-disruption-scenario.yaml`
 
 该场景通过以下方式构造`kubernetes-proxy`服务中断：
-1. 将`kubernetes-proxy` `Deployment`副本数缩容到0
-2. 维持指定时间副本数为`0`
-3. 恢复原有副本数
+
+1. **前置检查**：验证目标集群中存在`tke-chaos-test/tke-chaos-precheck-resource ConfigMap`，确保集群可用于演练
+2. **组件停机**：登录argo Web UI，点击`kubernetes-proxy-disruption-scenario workflow`，点击`suspend-1`节点`SUMMARY`标签下的`RESUME`按钮，将`kubernetes-proxy Deployment`副本数缩容到`0`
+3. **业务验证**：`kubernetes-proxy`停服期间，您可以去验证您的业务是否受到`kubernetes-proxy`停服的影响
+4. **组件恢复**：点击`suspend-2`节点`SUMMARY`标签下的`RESUME`按钮，将`kubernetes-proxy Deployment`副本数恢复
 
 **参数说明**
 
 | 参数名称 | 类型 | 默认值 | 说明 |
 |---------|------|--------|------|
-| `disruption-duration` | `string` | `30s` | 服务中断持续时间(如30s，5m等) |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | `目标集群kubeconfig secret`名称，如为空，则演练当前集群 |
 
 ## 命名空间删除防护
@@ -139,10 +154,10 @@ kubectl create -f workflow/managed-cluster-master-component/restore-apiserver.ya
 
 | 参数名称 | 类型 | 默认值 | 说明 |
 |---------|------|--------|------|
-| `region` | `string` | `<REGION>` | 腾讯云地域，如`ap-guangzhou` [地域查询](https://www.tencentcloud.com/zh/document/product/213/6091) |
-| `secret-id` | `string` | `<SECRET_ID>` | 腾讯云API密钥ID, 密钥可前往官网控制台 [API密钥管理](https://console.cloud.tencent.com/cam/capi) 进行获取 |
-| `secret-key` | `string` | `<SECRET_KEY>` | 腾讯云API密钥 |
-| `cluster-id` | `string` | `<CLUSTER_ID>` | 演练集群ID |
+| `region` | `string` | "" | 腾讯云地域，如`ap-guangzhou` [地域查询](https://www.tencentcloud.com/zh/document/product/213/6091) |
+| `secret-id` | `string` | "" | 腾讯云API密钥ID, 密钥可前往官网控制台 [API密钥管理](https://console.cloud.tencent.com/cam/capi) 进行获取 |
+| `secret-key` | `string` | "" | 腾讯云API密钥 |
+| `cluster-id` | `string` | "" | 演练集群ID |
 | `kubeconfig-secret-name` | `string` | `dest-cluster-kubeconfig` | 目标集群kubeconfig secret名称 |
 
 **注意事项**

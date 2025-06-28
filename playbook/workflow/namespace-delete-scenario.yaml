@@ -49,6 +49,10 @@ spec:
   templates:
   - name: main
     steps:
+    - - name: validate-params
+        template: validate-params
+    - - name: suspend
+        template: suspend
     - - name: create-block-namespace-deletion
         arguments:
           parameters:
@@ -142,3 +146,22 @@ spec:
 
   - name: suspend
     suspend: {}
+
+  - name: validate-params
+    script:
+      image: bitnami/kubectl:1.32.4
+      command: [bash]
+      source: |
+        #!/bin/bash
+        set -e
+        if [[ -z "{{workflow.parameters.kubeconfig-secret-name}}" ]]; then
+          echo "[ERROR] kubeconfig-secret-name parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        echo "Parameter validation passed"
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: "null"
+          path: /tmp/validate_result

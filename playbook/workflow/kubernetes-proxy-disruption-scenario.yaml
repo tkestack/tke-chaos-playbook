@@ -11,8 +11,6 @@ spec:
   serviceAccountName: tke-chaos
   arguments:
     parameters:
-    - name: disruption-duration
-      value: "30s"
     - name: workload-type
       value: "deployment"
     - name: workload-name
@@ -21,7 +19,42 @@ spec:
       value: "default"
     - name: kubeconfig-secret-name
       value: "dest-cluster-kubeconfig"
-  serviceAccountName: tke-chaos
-  workflowTemplateRef:
-    name: workload-disruption-template
-    clusterScope: true
+  templates:
+  - name: main
+    steps:
+    - - name: validate-params
+        template: validate-params
+    - - name: run-kubernetes-proxy-disruption
+        templateRef:
+          name: workload-disruption-template
+          template: main
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: workload-type
+            value: "{{workflow.parameters.workload-type}}"
+          - name: workload-name
+            value: "{{workflow.parameters.workload-name}}"
+          - name: workload-namespace
+            value: "{{workflow.parameters.workload-namespace}}"
+          - name: kubeconfig-secret-name
+            value: "{{workflow.parameters.kubeconfig-secret-name}}"
+
+  - name: validate-params
+    script:
+      image: bitnami/kubectl:1.32.4
+      command: [bash]
+      source: |
+        #!/bin/bash
+        set -e
+        if [[ -z "{{workflow.parameters.kubeconfig-secret-name}}" ]]; then
+          echo "[ERROR] kubeconfig-secret-name parameter cannot be empty" > /tmp/validate_result
+          exit 1
+        fi
+        echo "Parameter validation passed"
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: "null"
+          path: /tmp/validate_result

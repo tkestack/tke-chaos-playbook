@@ -13,8 +13,6 @@ spec:
   - name: main
     inputs:
       parameters:
-      - name: disruption-duration
-        description: "服务中断持续时间"
       - name: workload-type
         description: "要测试的工作负载类型, 可选值: daemonset/deployment/statefulset"
       - name: workload-name
@@ -30,6 +28,8 @@ spec:
         default: "tke-chaos-test"
         description: "预检查配置configmap所在命名空间"
     steps:
+    - - name: suspend-1
+        template: suspend
     - - name: precheck
         arguments:
           parameters:
@@ -58,7 +58,7 @@ spec:
           - name: kubeconfig-secret-name
             value: "{{inputs.parameters.kubeconfig-secret-name}}"
         template: scale-down-workload
-    - - name: suspend
+    - - name: suspend-2
         template: suspend
     - - name: scale-up-workload
         arguments:
